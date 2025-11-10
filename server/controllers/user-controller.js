@@ -5,7 +5,6 @@ const nodemailer= require("nodemailer");
 const multer = require("multer");
 const fs = require("fs");
 const path = require("path");
-
 const SALT_ROUNDS = 10;
 
 const uploadDir = path.join(__dirname, "..", "userprofilepic");
@@ -32,6 +31,51 @@ function fileFilter(req, file, cb) {
 }
 
 const upload = multer({ storage, fileFilter });
+
+/**
+ * @swagger
+ * /register:
+ *   post:
+ *     summary: Register a new user
+ *     tags: [Authentication]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         multipart/form-data:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - name
+ *               - email
+ *               - password
+ *               - phoneno
+ *               - address
+ *             properties:
+ *               name:
+ *                 type: string
+ *               email:
+ *                 type: string
+ *               password:
+ *                 type: string
+ *               phoneno:
+ *                 type: string
+ *               address:
+ *                 type: string
+ *               accountType:
+ *                 type: string
+ *               profile_pic:
+ *                 type: string
+ *                 format: binary
+ *     responses:
+ *       201:
+ *         description: User registered successfully
+ *       400:
+ *         description: Validation error
+ *       409:
+ *         description: Email already registered
+ *       500:
+ *         description: Server error
+ */
 
 const registered = async (req, res) => {
   upload.single("profile_pic")(req, res, async (err) => {
@@ -113,6 +157,49 @@ const registered = async (req, res) => {
   });
 };
 
+/**
+ * @swagger
+ * /login:
+ *   post:
+ *     summary: Login user
+ *     tags: [Authentication]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             $ref: '#/components/schemas/LoginRequest'
+ *     responses:
+ *       200:
+ *         description: Login successful
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ *                 token:
+ *                   type: string
+ *                 user:
+ *                   type: object
+ *                   properties:
+ *                     id:
+ *                       type: integer
+ *                     name:
+ *                       type: string
+ *                     email:
+ *                       type: string
+ *                     profile_pic:
+ *                       type: string
+ *       400:
+ *         description: Email and password required
+ *       401:
+ *         description: Invalid credentials
+ *       500:
+ *         description: Server error
+ */
+
 const logined = async (req, res) => {
   try {
     const { email, password } = req.body;
@@ -153,6 +240,32 @@ const transporter = nodemailer.createTransport({
   },
 });
 
+/**
+ * @swagger
+ * /forgotpassword:
+ *   post:
+ *     summary: Request password reset
+ *     tags: [Authentication]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - email
+ *             properties:
+ *               email:
+ *                 type: string
+ *     responses:
+ *       200:
+ *         description: Reset link sent to email
+ *       400:
+ *         description: Email is required or invalid
+ *       500:
+ *         description: Server error
+ */
+
 const forgot_password = async (req, res) => {
   const { email } = req.body;
   if (!email) return res.status(400).json({ error: "Email is required" });
@@ -191,6 +304,35 @@ const forgot_password = async (req, res) => {
   }
 }
 
+/**
+ * @swagger
+ * /reset-password:
+ *   post:
+ *     summary: Reset password with token
+ *     tags: [Authentication]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - token
+ *               - newPassword
+ *             properties:
+ *               token:
+ *                 type: string
+ *               newPassword:
+ *                 type: string
+ *     responses:
+ *       200:
+ *         description: Password reset successfully
+ *       400:
+ *         description: Token and new password are required or token expired
+ *       500:
+ *         description: Server error
+ */
+
 const reset_password= async (req, res) => {
   const { token, newPassword } = req.body;
   if (!token || !newPassword)
@@ -222,6 +364,49 @@ const parseIntParam = (param) => {
   const parsed = Number(param);
   return Number.isNaN(parsed) ? null : parsed;
 };
+
+/**
+ * @swagger
+ * /users:
+ *   get:
+ *     summary: Get paginated users list (excluding current user)
+ *     tags: [Users]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: query
+ *         name: page
+ *         schema:
+ *           type: integer
+ *           default: 1
+ *         description: Page number
+ *       - in: query
+ *         name: limit
+ *         schema:
+ *           type: integer
+ *           default: 6
+ *         description: Number of users per page
+ *     responses:
+ *       200:
+ *         description: Users retrieved successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 page:
+ *                   type: integer
+ *                 limit:
+ *                   type: integer
+ *                 users:
+ *                   type: array
+ *                   items:
+ *                     $ref: '#/components/schemas/User'
+ *       401:
+ *         description: Unauthorized
+ *       500:
+ *         description: Server error
+ */
 
 const getusers =  async (req, res) => {
   try {
@@ -257,6 +442,29 @@ const getusers =  async (req, res) => {
     res.status(500).json({ message: "Server error fetching users" });
   }
 }
+
+/**
+ * @swagger
+ * /follow:
+ *   post:
+ *     summary: Follow/unfollow user or send follow request
+ *     tags: [Follow]
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             $ref: '#/components/schemas/FollowAction'
+ *     responses:
+ *       200:
+ *         description: Operation successful
+ *       400:
+ *         description: Missing or invalid fields
+ *       500:
+ *         description: Server error
+ */
 
 const followbutton = async (req, res) => {
   const { userId, targetId, action, isRequest } = req.body;
@@ -305,6 +513,43 @@ const followbutton = async (req, res) => {
   }
 }
 
+/**
+ * @swagger
+ * /following/{userId}:
+ *   get:
+ *     summary: Get user's following list and pending requests
+ *     tags: [Follow]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: userId
+ *         required: true
+ *         schema:
+ *           type: integer
+ *         description: User ID
+ *     responses:
+ *       200:
+ *         description: Following data retrieved
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 following:
+ *                   type: array
+ *                   items:
+ *                     type: integer
+ *                 pendingRequests:
+ *                   type: array
+ *                   items:
+ *                     type: integer
+ *       400:
+ *         description: Invalid userId
+ *       500:
+ *         description: Server error
+ */
+
 const following = async (req, res) => {
   const userId = parseInt(req.params.userId, 10);
   if (!userId) return res.status(400).json({ error: "Invalid userId" });
@@ -324,6 +569,36 @@ const following = async (req, res) => {
     res.status(500).json({ message: "Server error" });
   }
 }
+
+/**
+ * @swagger
+ * /profile/{id}:
+ *   get:
+ *     summary: Get user profile by ID
+ *     tags: [Profile]
+  *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: integer
+ *         description: User ID
+ *     responses:
+ *       200:
+ *         description: Profile retrieved successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/User'
+ *       400:
+ *         description: Invalid userId
+ *       404:
+ *         description: User not found
+ *       500:
+ *         description: Server error
+ */
 
 const profileget = async (req, res) => {
   const userId = parseInt(req.params.id, 10);
@@ -370,6 +645,53 @@ const profileget = async (req, res) => {
   }
 };
 
+/**
+ * @swagger
+ * /profile/{id}:
+ *   put:
+ *     summary: Update user profile
+ *     tags: [Profile]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: integer
+ *         description: User ID
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               username:
+ *                 type: string
+ *               email:
+ *                 type: string
+ *               accountType:
+ *                 type: string
+ *               phoneNo:
+ *                 type: string
+ *               address:
+ *                 type: string
+ *               loggedInUserId:
+ *                 type: integer
+ *     responses:
+ *       200:
+ *         description: Profile updated successfully
+ *       400:
+ *         description: Invalid data
+ *       403:
+ *         description: Can only update own profile
+ *       404:
+ *         description: User not found
+ *       500:
+ *         description: Server error
+ */
+
 const  profileupdate = async (req, res) => {
   const userId = parseIntParam(req.params.id, 10);
   const { username, email, accountType, phoneNo, address, loggedInUserId} = req.body;
@@ -402,6 +724,62 @@ const  profileupdate = async (req, res) => {
   }
 }
 
+/**
+ * @swagger
+ * /followers/{userId}:
+ *   get:
+ *     summary: Get user's followers list with pagination
+ *     tags: [Follow]
+ *       security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: userId
+ *         required: true
+ *         schema:
+ *           type: integer
+ *         description: User ID
+ *       - in: query
+ *         name: page
+ *         schema:
+ *           type: integer
+ *           default: 1
+ *         description: Page number
+ *       - in: query
+ *         name: limit
+ *         schema:
+ *           type: integer
+ *           default: 3
+ *         description: Number of followers per page
+ *     responses:
+ *       200:
+ *         description: Followers list retrieved
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 page:
+ *                   type: integer
+ *                 limit:
+ *                   type: integer
+ *                 followers:
+ *                   type: array
+ *                   items:
+ *                     type: object
+ *                     properties:
+ *                       id:
+ *                         type: integer
+ *                       username:
+ *                         type: string
+ *                       profile_pic:
+ *                         type: string
+ *       400:
+ *         description: Invalid userId
+ *       500:
+ *         description: Server error
+ */
+
 const followerslist = async (req, res) => {
   const userId = parseIntParam(req.params.userId);
   if (!userId) return res.status(400).json({ error: "Invalid userId" });
@@ -427,6 +805,42 @@ const followerslist = async (req, res) => {
     res.status(500).json({ error: err.message });
   }
 }
+
+/**
+ * @swagger
+ * /following-list/{userId}:
+ *   get:
+ *     summary: Get users that the specified user is following
+ *     tags: [Follow]
+  *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: userId
+ *         required: true
+ *         schema:
+ *           type: integer
+ *         description: User ID
+ *       - in: query
+ *         name: page
+ *         schema:
+ *           type: integer
+ *           default: 1
+ *         description: Page number
+ *       - in: query
+ *         name: limit
+ *         schema:
+ *           type: integer
+ *           default: 3
+ *         description: Number of following users per page
+ *     responses:
+ *       200:
+ *         description: Following list retrieved
+ *       400:
+ *         description: Invalid userId
+ *       500:
+ *         description: Server error
+ */
 
 const followinglist = async (req, res) => {
   const userId = parseIntParam(req.params.userId);
@@ -454,6 +868,48 @@ const followinglist = async (req, res) => {
   }
 }
 
+/**
+ * @swagger
+ * /follow-requests/{userId}:
+ *   get:
+ *     summary: Get pending follow requests for a user
+ *     tags: [Follow]
+  *     security:
+ *       - bearerAuth: [] 
+ *     parameters:
+ *       - in: path
+ *         name: userId
+ *         required: true
+ *         schema:
+ *           type: integer
+ *         description: User ID
+ *     responses:
+ *       200:
+ *         description: Pending requests retrieved
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 pendingRequests:
+ *                   type: array
+ *                   items:
+ *                     type: object
+ *                     properties:
+ *                       id:
+ *                         type: integer
+ *                       requesterId:
+ *                         type: integer
+ *                       username:
+ *                         type: string
+ *                       profile_pic:
+ *                         type: string
+ *       400:
+ *         description: Invalid userId
+ *       500:
+ *         description: Server error
+ */
+
 const followrequest = async (req, res) => {
   const userId = parseIntParam(req.params.userId);
   if (!userId) return res.status(400).json({ error: "Invalid userId" });
@@ -474,6 +930,44 @@ const followrequest = async (req, res) => {
     res.status(500).json({ error: err.message });
   }
 }
+
+/**
+ * @swagger
+ * /follow-request/{requestId}:
+ *   put:
+ *     summary: Approve or reject follow request
+ *     tags: [Follow]
+  *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: requestId
+ *         required: true
+ *         schema:
+ *           type: integer
+ *         description: Follow request ID
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - action
+ *             properties:
+ *               action:
+ *                 type: string
+ *                 enum: [approve, reject]
+ *     responses:
+ *       200:
+ *         description: Request handled successfully
+ *       400:
+ *         description: Invalid request
+ *       404:
+ *         description: Follow request not found
+ *       500:
+ *         description: Server error
+ */
 
 const followreqhandle = async (req, res) => {
   const requestId = parseIntParam(req.params.requestId);
@@ -503,7 +997,6 @@ const followreqhandle = async (req, res) => {
     res.status(500).json({ error: err.message });
   }
 }
-
 
 module.exports= { 
   registered,

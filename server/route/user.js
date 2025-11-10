@@ -15,7 +15,7 @@ const {
   followerslist,
   followinglist,
   followrequest,
-  followreqhandle
+  followreqhandle 
 } = require("../controllers/user-controller");
 
 router.post("/register",registered);
