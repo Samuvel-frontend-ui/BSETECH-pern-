@@ -449,7 +449,8 @@ const getusers =  async (req, res) => {
  *   post:
  *     summary: Follow/unfollow user or send follow request
  *     tags: [Follow]
- * 
+ *     security:
+ *       - bearerAuth: []
  *     requestBody:
  *       required: true
  *       content:
@@ -518,7 +519,8 @@ const followbutton = async (req, res) => {
  *   get:
  *     summary: Get user's following list and pending requests
  *     tags: [Follow]
- *
+ *     security:
+ *       - bearerAuth: []
  *     parameters:
  *       - in: path
  *         name: userId
@@ -574,7 +576,8 @@ const following = async (req, res) => {
  *   get:
  *     summary: Get user profile by ID
  *     tags: [Profile]
- * 
+  *     security:
+ *       - bearerAuth: []
  *     parameters:
  *       - in: path
  *         name: id
@@ -644,10 +647,12 @@ const profileget = async (req, res) => {
 
 /**
  * @swagger
- * /api/profile/{id}:
+ * /profile/{id}:
  *   put:
  *     summary: Update user profile
  *     tags: [Profile]
+ *     security:
+ *       - bearerAuth: []
  *     parameters:
  *       - in: path
  *         name: id
@@ -725,6 +730,8 @@ const  profileupdate = async (req, res) => {
  *   get:
  *     summary: Get user's followers list with pagination
  *     tags: [Follow]
+ *       security:
+ *       - bearerAuth: []
  *     parameters:
  *       - in: path
  *         name: userId
@@ -805,6 +812,8 @@ const followerslist = async (req, res) => {
  *   get:
  *     summary: Get users that the specified user is following
  *     tags: [Follow]
+  *     security:
+ *       - bearerAuth: []
  *     parameters:
  *       - in: path
  *         name: userId
@@ -865,7 +874,8 @@ const followinglist = async (req, res) => {
  *   get:
  *     summary: Get pending follow requests for a user
  *     tags: [Follow]
- * 
+  *     security:
+ *       - bearerAuth: [] 
  *     parameters:
  *       - in: path
  *         name: userId
@@ -927,6 +937,8 @@ const followrequest = async (req, res) => {
  *   put:
  *     summary: Approve or reject follow request
  *     tags: [Follow]
+  *     security:
+ *       - bearerAuth: []
  *     parameters:
  *       - in: path
  *         name: requestId

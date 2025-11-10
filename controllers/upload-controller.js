@@ -92,7 +92,7 @@ exports.createUserPost = async (req, res) => {
     }
 
     const result = await pool.query(
-      `INSERT INTO user_posts (user_id, description, videos) VALUES ($1, $2, $3) RETURNING *`,
+      `INSERT INTO user_posts (user_id, description, video) VALUES ($1, $2, $3) RETURNING *`,
       [userId, description, videos]
     );
 
@@ -158,7 +158,7 @@ exports.getUserPosts = async (req, res) => {
       `SELECT 
          up.id AS post_id,
          up.description,
-         up.videos,
+         up.video,
          up.created_at,
          u.id AS user_id,
          u.name,
