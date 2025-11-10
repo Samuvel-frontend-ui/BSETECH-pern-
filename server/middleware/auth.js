@@ -31,5 +31,5 @@ async function authenticateToken(req, res, next) {
   }
 }
 
-module.exports = authenticateToken;
+module.export = authenticateToken;
 //this is the code of instagram
